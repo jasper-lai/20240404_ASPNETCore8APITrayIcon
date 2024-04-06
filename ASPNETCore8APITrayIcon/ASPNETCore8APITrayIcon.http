@@ -1,0 +1,6 @@
+@ASPNETCore8APITrayIcon_HostAddress = http://localhost:5137
+
+GET {{ASPNETCore8APITrayIcon_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
