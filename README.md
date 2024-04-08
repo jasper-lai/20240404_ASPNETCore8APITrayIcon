@@ -475,6 +475,7 @@ X-Forwarded-Proto: https
 }
 ```
 
+(5) 以 Postman 作測試.  
 結果就會發生 HTTP 400 Bad Request 的 response.  
 [Request]
 ```ini
@@ -504,6 +505,91 @@ Server: Kestrel
 <hr><p>HTTP Error 400. The request hostname is invalid.</p>
 </BODY></HTML>
 ```
+
+(6) 以 Chrome 作測試. "AllowedHosts": "localhost"  
+--> 可正常處理.  
+![51 Host_CORS_OK](pictures/51-Host_CORS_OK.png)  
+
+[Request]
+```ini
+OPTIONS /api/Product/QueryProductsByAjaxJson HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Access-Control-Request-Headers: content-type
+Access-Control-Request-Method: POST
+Cache-Control: no-cache
+Connection: keep-alive
+Host: localhost:5000
+Origin: https://localhost:7090
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: cross-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+```
+
+[Response]
+```ini
+HTTP/1.1 204 No Content
+Date: Mon, 08 Apr 2024 07:26:33 GMT
+Server: Kestrel
+Access-Control-Allow-Headers: content-type
+Access-Control-Allow-Methods: POST
+Access-Control-Allow-Origin: *
+```
+
+(7) 以 Chrome 作測試. "AllowedHosts": "localhostx"  
+--> 最後會引發 CORS 的錯誤.  
+[註1] 這個是伺服端進行 Host 這個 request header 的過濾, 與 CORS 實在沒有什麼關聯.  
+[註2] 推測原因: **browser 送出了 OPTIONS (預檢), 原本預期有以下 3 個 reaponse headers, 但都沒有回傳, 所以被判斷為 CORS 的問題.**   
+A.. Access-Control-Allow-Headers  
+B.. Access-Control-Allow-Methods  
+C.. Access-Control-Allow-Origin  
+[註3] 下圖的執行順序:  
+A.. 有 CORS 那筆 request 先發動  
+B.. browser 以用 OPTIONS 預檢伺服端  
+C.. 預檢失敗: 400 Bad Request  
+D.. 回到 CORS 那筆 request: 因為預檢失敗, 不再送 request 到伺服端; 但因為沒有前述的 3 個 headers, 被視為 CORS error  
+
+![52 Host_CORS_NG](pictures/52-Host_CORS_NG.png)  
+
+[Request]
+```ini
+OPTIONS /api/Product/QueryProductsByAjaxJson HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Access-Control-Request-Headers: content-type
+Access-Control-Request-Method: POST
+Cache-Control: no-cache
+Connection: keep-alive
+Host: localhost:5000
+Origin: https://localhost:7090
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: cross-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+```
+
+[Response]
+```ini
+HTTP/1.1 400 Bad Request
+Content-Length: 334
+Content-Type: text/html
+Date: Mon, 08 Apr 2024 07:17:28 GMT
+Server: Kestrel
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN""http://www.w3.org/TR/html4/strict.dtd">
+<HTML><HEAD><TITLE>Bad Request</TITLE>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=us-ascii"></ HEAD >
+<BODY><h2>Bad Request - Invalid Hostname</h2>
+<hr><p>HTTP Error 400. The request hostname is invalid.</p>
+</BODY></HTML>
+```
+
+
 
 ### (二) CORS 設置 <a id="section5-2"></a>
 

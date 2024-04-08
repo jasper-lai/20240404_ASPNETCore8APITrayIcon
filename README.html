@@ -405,7 +405,8 @@ X-Forwarded-Proto: https
   &quot;AllowedHosts&quot;: &quot;localhostx&quot;
 }
 </code></pre>
-        <p>結果就會發生 HTTP 400 Bad Request 的 response.<br />
+        <p>(5) 以 Postman 作測試.<br />
+            結果就會發生 HTTP 400 Bad Request 的 response.<br />
             [Request]</p>
         <pre><code class="language-ini">POST /api/Product/QueryProducts HTTP/1.1
 User-Agent: PostmanRuntime/7.37.0
@@ -424,6 +425,78 @@ Content-Type: text/html
 Date: Mon, 01 Apr 2024 07:16:00 GMT
 Server: Kestrel
  
+&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.01//EN&quot;&quot;http://www.w3.org/TR/html4/strict.dtd&quot;&gt;
+&lt;HTML&gt;&lt;HEAD&gt;&lt;TITLE&gt;Bad Request&lt;/TITLE&gt;
+&lt;META HTTP-EQUIV=&quot;Content-Type&quot; Content=&quot;text/html; charset=us-ascii&quot;&gt;&lt;/ HEAD &gt;
+&lt;BODY&gt;&lt;h2&gt;Bad Request - Invalid Hostname&lt;/h2&gt;
+&lt;hr&gt;&lt;p&gt;HTTP Error 400. The request hostname is invalid.&lt;/p&gt;
+&lt;/BODY&gt;&lt;/HTML&gt;
+</code></pre>
+        <p>(6) 以 Chrome 作測試. &quot;AllowedHosts&quot;: &quot;localhost&quot;<br />
+            --&gt; 可正常處理.<br />
+            <img src="https://github.com/jasper-lai/20240404_ASPNETCore8APITrayIcon/blob/master/pictures/51-Host_CORS_OK.png?raw=true" alt="51 Host_CORS_OK" /></p>
+        <p>[Request]</p>
+        <pre><code class="language-ini">OPTIONS /api/Product/QueryProductsByAjaxJson HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Access-Control-Request-Headers: content-type
+Access-Control-Request-Method: POST
+Cache-Control: no-cache
+Connection: keep-alive
+Host: localhost:5000
+Origin: https://localhost:7090
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: cross-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+</code></pre>
+        <p>[Response]</p>
+        <pre><code class="language-ini">HTTP/1.1 204 No Content
+Date: Mon, 08 Apr 2024 07:26:33 GMT
+Server: Kestrel
+Access-Control-Allow-Headers: content-type
+Access-Control-Allow-Methods: POST
+Access-Control-Allow-Origin: *
+</code></pre>
+        <p>(7) 以 Chrome 作測試. &quot;AllowedHosts&quot;: &quot;localhostx&quot;<br />
+            --&gt; 最後會引發 CORS 的錯誤.<br />
+            [註1] 這個是伺服端進行 Host 這個 request header 的過濾, 與 CORS 實在沒有什麼關聯.<br />
+            [註2] 推測原因: <strong>browser 送出了 OPTIONS (預檢), 原本預期有以下 3 個 reaponse headers, 但都沒有回傳, 所以被判斷為 CORS 的問題.</strong><br />
+            A.. Access-Control-Allow-Headers<br />
+            B.. Access-Control-Allow-Methods<br />
+            C.. Access-Control-Allow-Origin<br />
+            [註3] 下圖的執行順序:<br />
+            A.. 有 CORS 那筆 request 先發動<br />
+            B.. browser 以用 OPTIONS 預檢伺服端<br />
+            C.. 預檢失敗: 400 Bad Request<br />
+            D.. 回到 CORS 那筆 request: 因為預檢失敗, 不再送 request 到伺服端; 但因為沒有前述的 3 個 headers, 被視為 CORS error</p>
+        <p><img src="https://github.com/jasper-lai/20240404_ASPNETCore8APITrayIcon/blob/master/pictures/52-Host_CORS_NG.png?raw=true" alt="52 Host_CORS_NG" /></p>
+        <p>[Request]</p>
+        <pre><code class="language-ini">OPTIONS /api/Product/QueryProductsByAjaxJson HTTP/1.1
+Accept: */*
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Access-Control-Request-Headers: content-type
+Access-Control-Request-Method: POST
+Cache-Control: no-cache
+Connection: keep-alive
+Host: localhost:5000
+Origin: https://localhost:7090
+Pragma: no-cache
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: cross-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36
+</code></pre>
+        <p>[Response]</p>
+        <pre><code class="language-ini">HTTP/1.1 400 Bad Request
+Content-Length: 334
+Content-Type: text/html
+Date: Mon, 08 Apr 2024 07:17:28 GMT
+Server: Kestrel
+
 &lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.01//EN&quot;&quot;http://www.w3.org/TR/html4/strict.dtd&quot;&gt;
 &lt;HTML&gt;&lt;HEAD&gt;&lt;TITLE&gt;Bad Request&lt;/TITLE&gt;
 &lt;META HTTP-EQUIV=&quot;Content-Type&quot; Content=&quot;text/html; charset=us-ascii&quot;&gt;&lt;/ HEAD &gt;
